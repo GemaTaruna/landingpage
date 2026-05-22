@@ -90,7 +90,7 @@ const pricingPackages = [
   {
     name: "Paket Half Team",
     description: "Kombinasi dinamis dengan setengah kekuatan kompeten utama. Sangat ideal untuk upacara protokoler, parade skala sedang, khidmat penyambutan VIP, atau event dengan ruang terbatas.",
-    price: "Rp 1.000.000",
+    price: "Rp 1.500.000",
     features: [
       "Kekuatan Tim: ± 41 Personel Pilihan",
       "Formasi Komplit (Brass, Battery, Pit, & Full Color Guard)",
@@ -104,7 +104,7 @@ const pricingPackages = [
   {
     name: "Paket Full Team",
     description: "Pertunjukan kolosal spektakuler berkekuatan penuh untuk menghadirkan koreografi megah serta harmoni audio raksasa yang mengguncang panggung.",
-    price: "Rp 1.500.000",
+    price: "Rp 3.000.000",
     features: [
       "Kekuatan Penuh: 82 Personel Aktif Berkualitas",
       "Formasi Komplit (Brass, Battery, Pit, & Full Color Guard)",
