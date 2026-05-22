@@ -1,0 +1,58 @@
+{
+  "entities": {
+    "Personnel": {
+      "title": "Personnel",
+      "description": "Information about marching band members",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Full name of the person" },
+        "section": { "type": "string", "description": "Brass, Percussion, etc." },
+        "instrument": { "type": "string", "description": "Specific instrument played" },
+        "angkatan": { "type": "string", "description": "Batch year" },
+        "avatarUrl": { "type": "string", "description": "Profile picture URL" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "section", "instrument", "angkatan", "avatarUrl", "createdAt"]
+    },
+    "Gallery": {
+      "title": "Gallery Image",
+      "description": "Images for the documentation gallery",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "isLarge": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "imageUrl", "isLarge", "createdAt"]
+    },
+    "Settings": {
+      "title": "App Settings",
+      "description": "Global configuration and site content",
+      "type": "object",
+      "properties": {
+        "schoolName": { "type": "string" },
+        "schoolSubtitle": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "waLink": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "personnel": {
+      "schema": "Personnel",
+      "description": "Collection of all members"
+    },
+    "gallery": {
+      "schema": "Gallery",
+      "description": "Collection of gallery images"
+    },
+    "settings": {
+      "schema": "Settings",
+      "description": "Global site settings"
+    }
+  }
+}

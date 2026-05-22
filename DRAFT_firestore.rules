@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isEmailVerified() {
+      return request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && isEmailVerified() && request.auth.token.email == "nupha7@gmail.com";
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // 3. Validation Blueprints
+    function isValidPersonnel(data) {
+      return data.keys().hasAll(['name', 'section', 'instrument', 'angkatan', 'avatarUrl', 'createdAt'])
+        && data.keys().size() == 6
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 200
+        && data.section is string && data.section.size() <= 100
+        && data.instrument is string && data.instrument.size() <= 100
+        && data.angkatan is string && data.angkatan.size() == 4
+        && data.avatarUrl is string && data.avatarUrl.size() <= 1000
+        && data.createdAt == request.time;
+    }
+
+    function isValidGallery(data) {
+      return data.keys().hasAll(['title', 'imageUrl', 'isLarge', 'createdAt'])
+        && data.keys().size() == 4
+        && data.title is string && data.title.size() <= 200
+        && data.imageUrl is string && data.imageUrl.size() <= 1000
+        && data.isLarge is bool
+        && data.createdAt == request.time;
+    }
+
+    function isValidSettings(data) {
+      return data.schoolName is string && data.schoolName.size() <= 100
+        && (data.phone == null || (data.phone is string && data.phone.size() <= 30))
+        && (data.email == null || (data.email is string && data.email.size() <= 100));
+    }
+
+    // 4. Collection Matches
+    match /personnel/{personId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidId(personId) && isValidPersonnel(incoming());
+      allow update: if isAdmin() && isValidId(personId) && isValidPersonnel(incoming());
+      allow delete: if isAdmin() && isValidId(personId);
+    }
+
+    match /gallery/{imageId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidId(imageId) && isValidGallery(incoming());
+      allow update: if isAdmin() && isValidId(imageId) && isValidGallery(incoming());
+      allow delete: if isAdmin() && isValidId(imageId);
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidId(settingId) && isValidSettings(incoming());
+    }
+  }
+}

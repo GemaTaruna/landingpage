@@ -1,0 +1,6 @@
+{
+  "name": "Gema Taruna Landing Page",
+  "description": "Landing page website untuk Gema Taruna SMKN 2 Sragen dengan desain modern dan responsif.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
