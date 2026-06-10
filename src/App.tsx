@@ -560,11 +560,11 @@ export default function App() {
                   <div className="absolute right-0 bottom-full mb-2 w-64 bg-white p-4 rounded-xl shadow-2xl border border-gray-100 hidden group-hover:block z-50 animate-in fade-in slide-in-from-bottom-1 duration-200">
                     <h5 className="font-bold text-xs mb-2 text-blue-950">Panduan Section Gema Taruna:</h5>
                     <ul className="text-[10px] space-y-1.5 text-gray-600 leading-tight">
-                      <li><strong>Brass:</strong> Terompet, Bariton</li>
-                      <li><strong>Percussion:</strong> Bass Drum, Snare Drum, Tenor, Simbal</li>
-                      <li><strong>Pit Instrument:</strong> Belira (dan instrumen statis lainnya)</li>
-                      <li><strong>Color Guard:</strong> Bendera & Visual Performance</li>
-                      <li><strong>Leadership:</strong> Field Commander, Stickmaster Taruna/i</li>
+                      <li><strong>Brass:</strong> Trumpet, Baritone</li>
+                      <li><strong>Percussion:</strong> Bass Drum, Snare Drum, Tenor Drum, Simbal</li>
+                      <li><strong>Pit Instrument:</strong> Marching Bells (dan instrumen statis lainnya)</li>
+                      <li><strong>Color Guard:</strong> Color Guard</li>
+                      <li><strong>Leadership:</strong> Field Commander, Stickmaster Taruna, Stickmaster Taruni</li>
                     </ul>
                   </div>
                 </div>
