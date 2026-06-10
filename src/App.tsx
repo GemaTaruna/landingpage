@@ -845,7 +845,7 @@ export default function App() {
                   {pkg.features.map((feature, i) => (
                     <li key={i} className="flex items-start gap-4">
                       <CheckCircle2 className={`w-6 h-6 flex-shrink-0 mt-0.5 ${pkg.popular ? 'text-yellow-400' : 'text-yellow-500'}`} />
-                      <span className="text-lg font-medium opacity-90">{feature}</span>
+                      <span className="text-lg font-medium opacity-90" translate="no">{feature}</span>
                     </li>
                   ))}
                 </ul>
