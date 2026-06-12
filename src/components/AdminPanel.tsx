@@ -26,9 +26,22 @@ const getYoutubeId = (url: string): string | null => {
 
 const getTikTokId = (url: string): string | null => {
   if (!url) return null;
-  const regExp = /\/video\/(\d+)/;
-  const match = url.match(regExp);
-  return match ? match[1] : null;
+  
+  // Standard format: https://www.tiktok.com/@username/video/123456789
+  const stdRegExp = /\/video\/(\d+)/;
+  const match = url.match(stdRegExp);
+  if (match) return match[1];
+  
+  // Embed format direct
+  const embedRegExp = /\/embed\/v2\/(\d+)/;
+  const embedMatch = url.match(embedRegExp);
+  if (embedMatch) return embedMatch[1];
+
+  const embedRegExp2 = /\/embed\/(\d+)/;
+  const embedMatch2 = url.match(embedRegExp2);
+  if (embedMatch2) return embedMatch2[1];
+
+  return null;
 };
 
 const parseMediaUrl = (url: string): any => {
@@ -52,7 +65,8 @@ const parseMediaUrl = (url: string): any => {
       type: 'instagram',
       url: trimmed,
       thumbnail: '',
-      embedUrl: `${cleanUrl}embed/captioned/`
+      // simple /embed/ URL without /embed/captioned/ for cleaner aesthetic and space optimization
+      embedUrl: `${cleanUrl}embed/`
     };
   }
 
