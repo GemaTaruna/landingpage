@@ -123,6 +123,56 @@ const getCleanAngkatanName = (val: string): string => {
   return `Angkatan ${str}`;
 };
 
+const getYoutubeId = (url: string): string | null => {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
+
+const parseMediaUrl = (url: string): any => {
+  if (!url) return { type: 'image', url: '', thumbnail: '' };
+  
+  const trimmed = String(url).trim();
+  const ytId = getYoutubeId(trimmed);
+  if (ytId) {
+    return {
+      type: 'youtube',
+      url: trimmed,
+      thumbnail: `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`,
+      embedUrl: `https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0`
+    };
+  }
+
+  if (trimmed.includes('instagram.com/')) {
+    const baseUrl = trimmed.split('?')[0];
+    const cleanUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+    return {
+      type: 'instagram',
+      url: trimmed,
+      thumbnail: '',
+      embedUrl: `${cleanUrl}embed/captioned/`
+    };
+  }
+
+  if (
+    trimmed.match(/\.(mp4|webm|ogg|mov|m4v)(?:\?|$)/i) || 
+    (trimmed.includes('/storage/v1/object/public/') && (trimmed.toLowerCase().includes('.mp4') || trimmed.toLowerCase().includes('.mov') || trimmed.toLowerCase().includes('.webm')))
+  ) {
+    return {
+      type: 'video',
+      url: trimmed,
+      thumbnail: trimmed,
+    };
+  }
+
+  return {
+    type: 'image',
+    url: trimmed,
+    thumbnail: trimmed
+  };
+};
+
 const pricingPackages = [
   {
     name: "Paket Half Team",
@@ -825,31 +875,73 @@ export default function App() {
               id="gallery-container"
               className="flex gap-6 overflow-x-auto pb-12 snap-x snap-mandatory no-scrollbar scroll-smooth"
             >
-              {galleryList.map((image: any, i: number) => (
-                <motion.div
-                  key={image.id || i}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  onClick={() => setSelectedMedia(image)}
-                  className="flex-shrink-0 w-[85vw] md:w-[600px] aspect-video relative rounded-3xl overflow-hidden snap-center group cursor-pointer shadow-xl"
-                >
-                  <img
-                    src={image.imageUrl}
-                    alt={image.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-blue-950/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end p-8">
-                    <div>
-                      <h4 className="text-white text-xl font-bold mb-2">{image.title}</h4>
-                      <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center text-blue-950">
-                        <ArrowRight size={20} />
+              {galleryList.map((image: any, i: number) => {
+                const parsed = parseMediaUrl(image.imageUrl || image.image_url);
+                return (
+                  <motion.div
+                    key={image.id || i}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    onClick={() => setSelectedMedia(image)}
+                    className="flex-shrink-0 w-[85vw] md:w-[600px] aspect-video relative rounded-3xl overflow-hidden snap-center group cursor-pointer shadow-xl bg-blue-900/40 border border-white/10"
+                  >
+                    {parsed.type === 'instagram' ? (
+                      <div className="w-full h-full bg-gradient-to-tr from-purple-600 via-pink-600 to-yellow-500 flex flex-col items-center justify-center relative p-6">
+                        <div className="absolute top-4 right-4 bg-black/40 text-white p-2 rounded-xl backdrop-blur-md">
+                          <Instagram size={20} className="animate-pulse" />
+                        </div>
+                        <Instagram size={56} className="text-white drop-shadow-lg mb-3" />
+                        <span className="text-white font-extrabold text-sm tracking-wide bg-black/20 px-4 py-2 rounded-full backdrop-blur-xs">Putar Video Instagram (Reel)</span>
+                      </div>
+                    ) : parsed.type === 'youtube' ? (
+                      <div className="w-full h-full relative">
+                        <img
+                          src={parsed.thumbnail}
+                          alt={image.title}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                          <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-white shadow-lg transition-transform duration-300 group-hover:scale-110">
+                            <Youtube size={32} className="fill-current text-white" />
+                          </div>
+                        </div>
+                      </div>
+                    ) : parsed.type === 'video' ? (
+                      <div className="w-full h-full relative bg-black flex items-center justify-center">
+                        <video
+                          src={parsed.url}
+                          className="w-full h-full object-cover opacity-80"
+                          muted
+                          playsInline
+                        />
+                        <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                          <div className="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center text-blue-950 shadow-lg transition-transform duration-300 group-hover:scale-110">
+                            <span className="text-2xl pl-1 text-blue-950">▶</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <img
+                        src={parsed.url}
+                        alt={image.title}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        referrerPolicy="no-referrer"
+                      />
+                    )}
+
+                    <div className="absolute inset-0 bg-gradient-to-t from-blue-950/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end p-8">
+                      <div>
+                        <h4 className="text-white text-xl font-bold mb-2">{image.title}</h4>
+                        <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center text-blue-950">
+                          <ArrowRight size={20} />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </div>
             
             {/* Scroll Indicator */}
@@ -863,37 +955,68 @@ export default function App() {
 
         {/* Media Modal */}
         <AnimatePresence>
-          {selectedMedia && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 transition-all"
-            >
-              <button 
-                onClick={() => setSelectedMedia(null)}
-                className="absolute top-6 right-6 text-white hover:text-yellow-400 transition-colors z-[110]"
-              >
-                <X size={40} />
-              </button>
+          {selectedMedia && (() => {
+            const parsed = parseMediaUrl(selectedMedia.imageUrl || selectedMedia.image_url);
+            return (
               <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="relative max-w-5xl w-full aspect-video rounded-2xl overflow-hidden shadow-2xl"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 transition-all"
               >
-                <img 
-                  src={selectedMedia.imageUrl} 
-                  alt={selectedMedia.title} 
-                  className="w-full h-full object-contain"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/80 to-transparent">
-                  <h3 className="text-white text-2xl font-bold">{selectedMedia.title}</h3>
-                </div>
+                <button 
+                  onClick={() => setSelectedMedia(null)}
+                  className="absolute top-6 right-6 text-white hover:text-yellow-400 transition-colors z-[110]"
+                >
+                  <X size={40} />
+                </button>
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  className="relative max-w-5xl w-full aspect-video rounded-2xl overflow-hidden shadow-2xl bg-black"
+                >
+                  {parsed.type === 'youtube' ? (
+                    <iframe
+                      src={parsed.embedUrl}
+                      title={selectedMedia.title}
+                      className="w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                    ></iframe>
+                  ) : parsed.type === 'instagram' ? (
+                    <div className="w-full h-full flex items-center justify-center bg-black py-4">
+                      <iframe
+                        src={parsed.embedUrl}
+                        title={selectedMedia.title}
+                        className="w-full h-full max-w-[380px] border-0"
+                        allowTransparency
+                        scrolling="yes"
+                      ></iframe>
+                    </div>
+                  ) : parsed.type === 'video' ? (
+                    <video
+                      src={parsed.url}
+                      className="w-full h-full object-contain"
+                      controls
+                      autoPlay
+                      playsInline
+                    ></video>
+                  ) : (
+                    <img 
+                      src={parsed.url} 
+                      alt={selectedMedia.title} 
+                      className="w-full h-full object-contain"
+                      referrerPolicy="no-referrer"
+                    />
+                  )}
+                  <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
+                    <h3 className="text-white text-2xl font-bold">{selectedMedia.title}</h3>
+                  </div>
+                </motion.div>
               </motion.div>
-            </motion.div>
-          )}
+            );
+          })()}
         </AnimatePresence>
         {/* Person Modal */}
         <AnimatePresence>
