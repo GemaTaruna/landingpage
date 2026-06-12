@@ -20,6 +20,14 @@ interface AdminPanelProps {
   userEmail?: string;
 }
 
+const sectionInstruments: Record<string, string[]> = {
+  "Brass": ["Trumpet", "Baritone", "Mellophone", "Trombone", "Tuba"],
+  "Percussion": ["Bass Drum", "Snare Drum", "Tenor Drum", "Simbal"],
+  "Pit Instrument": ["Marching Bells"],
+  "Color Guard": ["Color Guard"],
+  "Leadership": ["Field Commander", "Stickmaster Taruna", "Stickmaster Taruni"]
+};
+
 export default function AdminPanel({ onLogout, userEmail }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<'personnel' | 'gallery'>('personnel');
   const { data: personnelList, loading: pLoading, error: pError, refresh: refreshPersonnel } = useSupabaseCollection<any>('personnel');
@@ -331,8 +339,14 @@ export default function AdminPanel({ onLogout, userEmail }: AdminPanelProps) {
                     />
                     <div className="grid grid-cols-2 gap-4">
                       <select 
-                        required className="p-3 rounded-xl border border-gray-200 outline-none focus:border-yellow-400 bg-white" 
-                        value={form.section || ''} onChange={e => setForm({...form, section: e.target.value})}
+                        required 
+                        className="p-3 rounded-xl border border-gray-200 outline-none focus:border-yellow-400 bg-white font-medium text-blue-950 text-sm" 
+                        value={form.section || ''} 
+                        onChange={e => {
+                          const newSec = e.target.value;
+                          const defaultInst = newSec && sectionInstruments[newSec] ? sectionInstruments[newSec][0] : '';
+                          setForm({...form, section: newSec, instrument: defaultInst});
+                        }}
                       >
                         <option value="">Pilih Section</option>
                         <option value="Brass">Brass</option>
@@ -341,11 +355,44 @@ export default function AdminPanel({ onLogout, userEmail }: AdminPanelProps) {
                         <option value="Pit Instrument">Pit Instrument</option>
                         <option value="Leadership">Leadership</option>
                       </select>
-                      <input 
-                        required placeholder="Alat Musik" className="p-3 rounded-xl border border-gray-200 outline-none focus:border-yellow-400" 
-                        value={form.instrument || ''} onChange={e => setForm({...form, instrument: e.target.value})}
-                      />
+
+                      <select 
+                        required 
+                        className="p-3 rounded-xl border border-gray-200 outline-none focus:border-yellow-400 bg-white font-medium text-blue-950 text-sm" 
+                        value={
+                          !form.section 
+                            ? '' 
+                            : (form.instrument && (sectionInstruments[form.section] || []).includes(form.instrument))
+                              ? form.instrument
+                              : 'Lainnya'
+                        } 
+                        onChange={e => {
+                          const val = e.target.value;
+                          if (val === 'Lainnya') {
+                            setForm({...form, instrument: ''});
+                          } else {
+                            setForm({...form, instrument: val});
+                          }
+                        }}
+                        disabled={!form.section}
+                      >
+                        <option value="">{form.section ? 'Pilih Alat Musik' : 'Pilih Section Dulu'}</option>
+                        {form.section && (sectionInstruments[form.section] || []).map((inst) => (
+                          <option key={inst} value={inst}>{inst}</option>
+                        ))}
+                        {form.section && <option value="Lainnya">Tulis Kustom / Lainnya...</option>}
+                      </select>
                     </div>
+
+                    {form.section && (!form.instrument || !(sectionInstruments[form.section] || []).includes(form.instrument)) && (
+                      <input 
+                        required 
+                        placeholder="Ketik nama alat musik kustom..." 
+                        className="w-full p-3 rounded-xl border border-yellow-400 outline-none focus:border-yellow-500 text-sm font-medium text-blue-950 bg-yellow-50/20 animate-in fade-in slide-in-from-top-1 duration-200" 
+                        value={form.instrument || ''} 
+                        onChange={e => setForm({...form, instrument: e.target.value})}
+                      />
+                    )}
                     <input 
                       required placeholder="Angkatan (Contoh: 2024)" className="w-full p-3 rounded-xl border border-gray-200 outline-none focus:border-yellow-400" 
                       value={form.angkatan || ''} onChange={e => setForm({...form, angkatan: e.target.value})}
