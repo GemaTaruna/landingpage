@@ -86,6 +86,43 @@ const defaultGallery = [
   { title: "Display Competition 2024", imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&q=80&w=800", isLarge: false },
 ];
 
+const romanToVal = (roman: string): number => {
+  const r = roman.toUpperCase().trim();
+  const map: { [key: string]: number } = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
+  let total = 0;
+  for (let i = 0; i < r.length; i++) {
+    const current = map[r[i]] || 0;
+    const next = map[r[i + 1]] || 0;
+    if (current < next) {
+      total += next - current;
+      i++;
+    } else {
+      total += current;
+    }
+  }
+  return total;
+};
+
+const getAngkatanWeight = (angkatanStr: string): number => {
+  if (!angkatanStr) return 0;
+  const clean = String(angkatanStr).replace(/angkatan/gi, '').trim();
+  if (/^\d+$/.test(clean)) {
+    return parseInt(clean, 10);
+  }
+  const romanWeight = romanToVal(clean);
+  if (romanWeight > 0) return romanWeight;
+  return 0;
+};
+
+const getCleanAngkatanName = (val: string): string => {
+  if (!val) return '';
+  const str = String(val).trim();
+  if (str.toLowerCase().startsWith('angkatan')) {
+    return str;
+  }
+  return `Angkatan ${str}`;
+};
+
 const pricingPackages = [
   {
     name: "Paket Half Team",
@@ -190,6 +227,8 @@ export default function App() {
   const [filterSection, setFilterSection] = useState('Semua Section');
   const [selectedMedia, setSelectedMedia] = useState<any>(null);
   const [selectedPerson, setSelectedPerson] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasSetDefaultAngkatan, setHasSetDefaultAngkatan] = useState(false);
   
   // Auth & Admin State
   const [user, setUser] = useState<any>(null);
@@ -209,6 +248,40 @@ export default function App() {
 
   const personnelList = dbPersonnel.length > 0 ? dbPersonnel : defaultPersonnel;
   const galleryList = dbGallery.length > 0 ? dbGallery : defaultGallery;
+
+  // Automatically select the newest cohort (latest Angkatan) when data arrives
+  useEffect(() => {
+    if (personnelList && personnelList.length > 0 && !hasSetDefaultAngkatan) {
+      const uniqueClean = [...new Set(personnelList.map((p: any) => getCleanAngkatanName(p.angkatan)))];
+      if (uniqueClean.length > 0) {
+        // Sort from highest to lowest weight
+        const sorted = uniqueClean.sort((a: any, b: any) => getAngkatanWeight(b) - getAngkatanWeight(a));
+        const latest = sorted[0];
+        if (latest) {
+          setFilterAngkatan(latest);
+          setHasSetDefaultAngkatan(true);
+        }
+      }
+    }
+  }, [personnelList, hasSetDefaultAngkatan]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterAngkatan, filterSection]);
+
+  const handleMobileLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    setIsMenuOpen(false);
+    
+    // Smooth scroll slightly delayed to let menu container collapse
+    setTimeout(() => {
+      const target = document.getElementById(href.replace('#', ''));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 200);
+  };
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -302,10 +375,16 @@ export default function App() {
   ];
 
   const filteredPersonnel = personnelList.filter((p: any) => {
-    const matchAngkatan = filterAngkatan === 'Semua Angkatan' || `Angkatan ${p.angkatan}` === filterAngkatan;
+    const cleanP = getCleanAngkatanName(p.angkatan);
+    const matchAngkatan = filterAngkatan === 'Semua Angkatan' || cleanP === filterAngkatan;
     const matchSection = filterSection === 'Semua Section' || p.section === filterSection;
     return matchAngkatan && matchSection;
   });
+
+  const ITEMS_PER_PAGE = 12;
+  const totalPages = Math.ceil(filteredPersonnel.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedPersonnel = filteredPersonnel.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   if (isAdminMode && user?.email && isEmailAdmin(user.email)) {
     return <AdminPanel onLogout={handleLogout} userEmail={user?.email} />;
@@ -380,7 +459,7 @@ export default function App() {
                   <a
                     key={link.name}
                     href={link.href}
-                    onClick={() => setIsMenuOpen(false)}
+                    onClick={(e) => handleMobileLinkClick(e, link.href)}
                     className="block px-3 py-4 text-base font-medium text-gray-200 hover:text-yellow-400 hover:bg-blue-900/50 rounded-lg transition-all"
                   >
                     {link.name}
@@ -533,17 +612,22 @@ export default function App() {
                 Angkatan
               </label>
               <div className="flex flex-wrap gap-2">
-                {['Semua Angkatan', ...new Set(personnelList.map(p => `Angkatan ${p.angkatan}`))].sort().map((btn) => (
+                {(() => {
+                  const uniqueClean = [...new Set(personnelList.map((p: any) => getCleanAngkatanName(p.angkatan)))];
+                  // Sort newest to oldest
+                  uniqueClean.sort((a: any, b: any) => getAngkatanWeight(b) - getAngkatanWeight(a));
+                  return ['Semua Angkatan', ...uniqueClean];
+                })().map((btn) => (
                   <button
-                    key={btn as string}
-                    onClick={() => setFilterAngkatan(btn as string)}
+                    key={btn}
+                    onClick={() => setFilterAngkatan(btn)}
                     className={`px-5 py-3 rounded-xl font-bold transition-all duration-300 text-sm border-2 ${
                       filterAngkatan === btn
                         ? 'bg-yellow-400 border-yellow-400 text-blue-950 shadow-lg'
                         : 'bg-white border-gray-200 text-gray-600 hover:border-yellow-400'
                     }`}
                   >
-                    {btn as string}
+                    {btn}
                   </button>
                 ))}
               </div>
@@ -560,11 +644,11 @@ export default function App() {
                   <div className="absolute right-0 bottom-full mb-2 w-64 bg-white p-4 rounded-xl shadow-2xl border border-gray-100 hidden group-hover:block z-50 animate-in fade-in slide-in-from-bottom-1 duration-200">
                     <h5 className="font-bold text-xs mb-2 text-blue-950">Panduan Section Gema Taruna:</h5>
                     <ul className="text-[10px] space-y-1.5 text-gray-600 leading-tight">
-                      <li><strong>Brass:</strong> Trumpet, Baritone</li>
-                      <li><strong>Percussion:</strong> Bass Drum, Snare Drum, Tenor Drum, Simbal</li>
-                      <li><strong>Pit Instrument:</strong> Marching Bells (dan instrumen statis lainnya)</li>
-                      <li><strong>Color Guard:</strong> Color Guard</li>
-                      <li><strong>Leadership:</strong> Field Commander, Stickmaster Taruna, Stickmaster Taruni</li>
+                      <li><strong>Brass:</strong> Terompet, Bariton</li>
+                      <li><strong>Percussion:</strong> Bass Drum, Snare Drum, Tenor, Simbal</li>
+                      <li><strong>Pit Instrument:</strong> Belira (dan instrumen statis lainnya)</li>
+                      <li><strong>Color Guard:</strong> Bendera & Visual Performance</li>
+                      <li><strong>Leadership:</strong> Field Commander, Stickmaster Taruna/i</li>
                     </ul>
                   </div>
                 </div>
@@ -598,7 +682,7 @@ export default function App() {
               layout
               className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6"
             >
-              {filteredPersonnel.map((person: any, index: number) => (
+              {paginatedPersonnel.map((person: any, index: number) => (
                 <motion.div
                   layout
                   key={person.id || person.name}
@@ -621,10 +705,77 @@ export default function App() {
                   <h4 className="font-bold text-blue-950 text-sm mb-1">{person.name}</h4>
                   <p className="text-xs text-gray-500 font-semibold mb-1 uppercase tracking-tighter">{person.section}</p>
                   <p className="text-xs text-yellow-600 font-bold mb-3">{person.instrument}</p>
-                  <span className="text-[10px] font-bold bg-blue-950 text-white px-3 py-1 rounded-full">{person.angkatan}</span>
+                  <span className="text-[10px] font-bold bg-blue-950 text-white px-3 py-1 rounded-full">{getCleanAngkatanName(person.angkatan)}</span>
                 </motion.div>
               ))}
             </motion.div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-12 pt-8 border-t border-gray-100">
+                <div className="text-sm font-medium text-gray-500">
+                  Menampilkan <span className="font-extrabold text-blue-950">{startIndex + 1}</span> - <span className="font-extrabold text-blue-950">{Math.min(startIndex + ITEMS_PER_PAGE, filteredPersonnel.length)}</span> dari <span className="font-extrabold text-blue-950">{filteredPersonnel.length}</span> personel
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      if (currentPage > 1) {
+                        setCurrentPage(currentPage - 1);
+                        document.getElementById('profil')?.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }}
+                    disabled={currentPage === 1}
+                    className={`p-2.5 rounded-xl border-2 transition-all duration-300 ${
+                      currentPage === 1
+                        ? 'border-gray-100 text-gray-300 cursor-not-allowed bg-gray-50'
+                        : 'border-gray-200 text-blue-950 hover:border-yellow-400 hover:bg-yellow-50 bg-white'
+                    }`}
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+
+                  <div className="flex items-center gap-1.5">
+                    {Array.from({ length: totalPages }).map((_, idx) => {
+                      const pageNum = idx + 1;
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => {
+                            setCurrentPage(pageNum);
+                            document.getElementById('profil')?.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className={`w-11 h-11 rounded-xl font-bold transition-all duration-300 text-sm border-2 ${
+                            currentPage === pageNum
+                              ? 'bg-yellow-400 border-yellow-400 text-blue-950 shadow-md'
+                              : 'bg-white border-gray-200 text-gray-600 hover:border-yellow-400 hover:bg-yellow-50/30'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      if (currentPage < totalPages) {
+                        setCurrentPage(currentPage + 1);
+                        document.getElementById('profil')?.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }}
+                    disabled={currentPage === totalPages}
+                    className={`p-2.5 rounded-xl border-2 transition-all duration-300 ${
+                      currentPage === totalPages
+                        ? 'border-gray-100 text-gray-300 cursor-not-allowed bg-gray-50'
+                        : 'border-gray-200 text-blue-950 hover:border-yellow-400 hover:bg-yellow-50 bg-white'
+                    }`}
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -845,7 +996,7 @@ export default function App() {
                   {pkg.features.map((feature, i) => (
                     <li key={i} className="flex items-start gap-4">
                       <CheckCircle2 className={`w-6 h-6 flex-shrink-0 mt-0.5 ${pkg.popular ? 'text-yellow-400' : 'text-yellow-500'}`} />
-                      <span className="text-lg font-medium opacity-90" translate="no">{feature}</span>
+                      <span className="text-lg font-medium opacity-90">{feature}</span>
                     </li>
                   ))}
                 </ul>
