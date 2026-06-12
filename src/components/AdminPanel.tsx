@@ -24,6 +24,13 @@ const getYoutubeId = (url: string): string | null => {
   return (match && match[2].length === 11) ? match[2] : null;
 };
 
+const getTikTokId = (url: string): string | null => {
+  if (!url) return null;
+  const regExp = /\/video\/(\d+)/;
+  const match = url.match(regExp);
+  return match ? match[1] : null;
+};
+
 const parseMediaUrl = (url: string): any => {
   if (!url) return { type: 'image', url: '', thumbnail: '' };
   
@@ -46,6 +53,16 @@ const parseMediaUrl = (url: string): any => {
       url: trimmed,
       thumbnail: '',
       embedUrl: `${cleanUrl}embed/captioned/`
+    };
+  }
+
+  if (trimmed.includes('tiktok.com/')) {
+    const tkId = getTikTokId(trimmed);
+    return {
+      type: 'tiktok',
+      url: trimmed,
+      videoStaticId: tkId,
+      embedUrl: tkId ? `https://www.tiktok.com/embed/${tkId}` : null
     };
   }
 
@@ -589,6 +606,17 @@ export default function AdminPanel({ onLogout, userEmail }: AdminPanelProps) {
                         <div className="w-full h-full bg-gradient-to-tr from-purple-600 via-pink-600 to-yellow-500 flex flex-col items-center justify-center p-4">
                           <Instagram size={32} className="text-white drop-shadow-md mb-1 animate-pulse" />
                           <span className="text-white font-extrabold text-[10px] tracking-wider uppercase text-center bg-black/20 px-2 py-1 rounded-md">Instagram Link</span>
+                        </div>
+                      ) : parsed.type === 'tiktok' ? (
+                        <div className="w-full h-full bg-black flex flex-col items-center justify-center p-4 border-b-2 border-b-cyan-400">
+                          <div className="bg-gradient-to-tr from-cyan-400 via-black to-pink-500 rounded-lg p-1.5 mb-1">
+                            <svg className="w-5 h-5 fill-white" viewBox="0 0 24 24">
+                              <path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.89-.6-4.09-1.5-.7-.52-1.28-1.19-1.74-1.95-.01 2.25-.01 4.51-.01 6.77-.04 2.1-.51 4.25-1.68 6.03-1.61 2.49-4.59 3.99-7.58 3.66-3.41-.37-6.27-3.08-6.72-6.51-.55-4.14 2.12-8.19 6.21-8.91.82-.14 1.67-.16 2.5-.04V7.54c-1.13-.19-2.33-.03-3.39.46-1.97.91-3.3 2.99-3.26 5.17-.02 2.3 1.48 4.45 3.65 5.2 2.17.75 4.73.08 6.16-1.71 1.01-1.26 1.41-2.92 1.34-4.52V.02h.16z"/>
+                            </svg>
+                          </div>
+                          <span className="text-white font-extrabold text-[9px] tracking-wider uppercase text-center bg-white/10 px-2 py-0.5 rounded-full">
+                            {parsed.videoStaticId ? 'TikTok Video' : 'TikTok Link (Short)'}
+                          </span>
                         </div>
                       ) : parsed.type === 'youtube' ? (
                         <div className="w-full h-full relative">
