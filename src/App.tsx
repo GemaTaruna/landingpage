@@ -130,6 +130,13 @@ const getYoutubeId = (url: string): string | null => {
   return (match && match[2].length === 11) ? match[2] : null;
 };
 
+const getTikTokId = (url: string): string | null => {
+  if (!url) return null;
+  const regExp = /\/video\/(\d+)/;
+  const match = url.match(regExp);
+  return match ? match[1] : null;
+};
+
 const parseMediaUrl = (url: string): any => {
   if (!url) return { type: 'image', url: '', thumbnail: '' };
   
@@ -152,6 +159,16 @@ const parseMediaUrl = (url: string): any => {
       url: trimmed,
       thumbnail: '',
       embedUrl: `${cleanUrl}embed/captioned/`
+    };
+  }
+
+  if (trimmed.includes('tiktok.com/')) {
+    const tkId = getTikTokId(trimmed);
+    return {
+      type: 'tiktok',
+      url: trimmed,
+      videoStaticId: tkId,
+      embedUrl: tkId ? `https://www.tiktok.com/embed/${tkId}` : null
     };
   }
 
@@ -279,6 +296,7 @@ export default function App() {
   const [selectedPerson, setSelectedPerson] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasSetDefaultAngkatan, setHasSetDefaultAngkatan] = useState(false);
+  const [activeDotIndex, setActiveDotIndex] = useState(0);
   
   // Auth & Admin State
   const [user, setUser] = useState<any>(null);
@@ -319,6 +337,21 @@ export default function App() {
   useEffect(() => {
     setCurrentPage(1);
   }, [filterAngkatan, filterSection]);
+
+  // Set initial scroll position to the middle section (Set B or element index N) for infinite carousel looping
+  useEffect(() => {
+    const el = document.getElementById('gallery-container');
+    if (el && galleryList.length > 0) {
+      const alignTimer = setTimeout(() => {
+        const children = Array.from(el.children) as HTMLElement[];
+        const N = galleryList.length;
+        if (children[N]) {
+          el.scrollLeft = children[N].offsetLeft - el.offsetLeft;
+        }
+      }, 150);
+      return () => clearTimeout(alignTimer);
+    }
+  }, [galleryList]);
 
   const handleMobileLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
@@ -847,25 +880,47 @@ export default function App() {
             )}
             
             {/* Navigation Arrows */}
-            <div className="absolute top-1/2 -translate-y-1/2 -left-4 md:-left-8 z-20 opacity-0 group-hover/gallery:opacity-100 transition-opacity">
+            <div className="absolute top-1/2 -translate-y-1/2 -left-4 md:-left-8 z-20 opacity-100 md:opacity-0 group-hover/gallery:opacity-100 transition-opacity">
               <button 
                 onClick={() => {
                   const el = document.getElementById('gallery-container');
-                  el?.scrollBy({ left: -400, behavior: 'smooth' });
+                  if (el && galleryList.length > 0) {
+                    const N = galleryList.length;
+                    const children = Array.from(el.children) as HTMLElement[];
+                    const targetIndex = activeDotIndex + N - 1;
+                    if (children[targetIndex]) {
+                      el.scrollTo({
+                        left: children[targetIndex].offsetLeft - el.offsetLeft,
+                        behavior: 'smooth'
+                      });
+                    }
+                  }
                 }}
                 className="w-12 h-12 md:w-16 md:h-16 bg-yellow-400 text-blue-950 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all"
+                aria-label="Previous slide"
               >
                 <ChevronLeft size={32} />
               </button>
             </div>
             
-            <div className="absolute top-1/2 -translate-y-1/2 -right-4 md:-right-8 z-20 opacity-0 group-hover/gallery:opacity-100 transition-opacity">
+            <div className="absolute top-1/2 -translate-y-1/2 -right-4 md:-right-8 z-20 opacity-100 md:opacity-0 group-hover/gallery:opacity-100 transition-opacity">
               <button 
                 onClick={() => {
                   const el = document.getElementById('gallery-container');
-                  el?.scrollBy({ left: 400, behavior: 'smooth' });
+                  if (el && galleryList.length > 0) {
+                    const N = galleryList.length;
+                    const children = Array.from(el.children) as HTMLElement[];
+                    const targetIndex = activeDotIndex + N + 1;
+                    if (children[targetIndex]) {
+                      el.scrollTo({
+                        left: children[targetIndex].offsetLeft - el.offsetLeft,
+                        behavior: 'smooth'
+                      });
+                    }
+                  }
                 }}
                 className="w-12 h-12 md:w-16 md:h-16 bg-yellow-400 text-blue-950 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all"
+                aria-label="Next slide"
               >
                 <ChevronRight size={32} />
               </button>
@@ -873,13 +928,56 @@ export default function App() {
 
             <div 
               id="gallery-container"
+              onScroll={(e) => {
+                const el = e.currentTarget;
+                const scrollLeft = el.scrollLeft;
+                const children = Array.from(el.children) as HTMLElement[];
+                const N = galleryList.length;
+                if (children.length === 0 || N === 0) return;
+
+                // Track the closest child to determine current active dot index
+                let closestIndex = 0;
+                let minDistance = Infinity;
+                children.forEach((child, i) => {
+                  const distance = Math.abs(child.offsetLeft - el.offsetLeft - scrollLeft);
+                  if (distance < minDistance) {
+                    minDistance = distance;
+                    closestIndex = i;
+                  }
+                });
+
+                const originalIndex = closestIndex % N;
+                setActiveDotIndex(originalIndex);
+
+                // Seamless Loop Jump checking:
+                // Set A: [0, N-1], Set B: [N, 2N-1], Set C: [2N, 3N-1]
+                if (closestIndex < N) {
+                  el.style.scrollBehavior = 'auto'; // Disable smooth scrolling for instant jump
+                  const targetIndex = closestIndex + N;
+                  if (children[targetIndex]) {
+                    el.scrollLeft = children[targetIndex].offsetLeft - el.offsetLeft;
+                  }
+                  setTimeout(() => {
+                    el.style.scrollBehavior = 'smooth';
+                  }, 50);
+                } else if (closestIndex >= 2 * N) {
+                  el.style.scrollBehavior = 'auto';
+                  const targetIndex = closestIndex - N;
+                  if (children[targetIndex]) {
+                    el.scrollLeft = children[targetIndex].offsetLeft - el.offsetLeft;
+                  }
+                  setTimeout(() => {
+                    el.style.scrollBehavior = 'smooth';
+                  }, 50);
+                }
+              }}
               className="flex gap-6 overflow-x-auto pb-12 snap-x snap-mandatory no-scrollbar scroll-smooth"
             >
-              {galleryList.map((image: any, i: number) => {
+              {[...galleryList, ...galleryList, ...galleryList].map((image: any, i: number) => {
                 const parsed = parseMediaUrl(image.imageUrl || image.image_url);
                 return (
                   <motion.div
-                    key={image.id || i}
+                    key={`${image.id || i}-${i}`}
                     initial={{ opacity: 0, scale: 0.9 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
@@ -893,6 +991,21 @@ export default function App() {
                         </div>
                         <Instagram size={56} className="text-white drop-shadow-lg mb-3" />
                         <span className="text-white font-extrabold text-sm tracking-wide bg-black/20 px-4 py-2 rounded-full backdrop-blur-xs">Putar Video Instagram (Reel)</span>
+                      </div>
+                    ) : parsed.type === 'tiktok' ? (
+                      <div className="w-full h-full bg-black flex flex-col items-center justify-center relative p-6 border-b-4 border-b-cyan-400">
+                        <div className="absolute top-4 right-4 bg-black/40 text-white px-2 py-1 rounded-xl backdrop-blur-md flex items-center gap-1.5 text-[10px] uppercase font-mono tracking-widest text-[#00f2fe]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#00f2fe] animate-pulse"></span>
+                          <span>TikTok</span>
+                        </div>
+                        <div className="w-16 h-16 bg-gradient-to-tr from-cyan-400 via-black to-pink-500 rounded-2xl flex items-center justify-center shadow-lg mb-3">
+                          <svg className="w-8 h-8 fill-white" viewBox="0 0 24 24">
+                            <path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.89-.6-4.09-1.5-.7-.52-1.28-1.19-1.74-1.95-.01 2.25-.01 4.51-.01 6.77-.04 2.1-.51 4.25-1.68 6.03-1.61 2.49-4.59 3.99-7.58 3.66-3.41-.37-6.27-3.08-6.72-6.51-.55-4.14 2.12-8.19 6.21-8.91.82-.14 1.67-.16 2.5-.04V7.54c-1.13-.19-2.33-.03-3.39.46-1.97.91-3.3 2.99-3.26 5.17-.02 2.3 1.48 4.45 3.65 5.2 2.17.75 4.73.08 6.16-1.71 1.01-1.26 1.41-2.92 1.34-4.52V.02h.16z"/>
+                          </svg>
+                        </div>
+                        <span className="text-white font-extrabold text-sm tracking-wide bg-white/10 px-4 py-2 rounded-full backdrop-blur-xs text-center">
+                          {parsed.videoStaticId ? 'Putar Video TikTok' : 'Buka & Tonton di TikTok'}
+                        </span>
                       </div>
                     ) : parsed.type === 'youtube' ? (
                       <div className="w-full h-full relative">
@@ -945,9 +1058,30 @@ export default function App() {
             </div>
             
             {/* Scroll Indicator */}
-            <div className="flex justify-center gap-2">
+            <div className="flex justify-center gap-2 mt-4">
               {galleryList.map((_, i) => (
-                <div key={i} className="w-1.5 h-1.5 rounded-full bg-yellow-500/20"></div>
+                <button
+                  key={i}
+                  onClick={() => {
+                    const el = document.getElementById('gallery-container');
+                    if (el && galleryList.length > 0) {
+                      const N = galleryList.length;
+                      const children = Array.from(el.children) as HTMLElement[];
+                      // Scroll to target item in Set B (index i + N)
+                      const targetIndex = i + N;
+                      if (children[targetIndex]) {
+                        el.scrollTo({
+                          left: children[targetIndex].offsetLeft - el.offsetLeft,
+                          behavior: 'smooth'
+                        });
+                      }
+                    }
+                  }}
+                  className={`h-2.5 rounded-full transition-all duration-300 ${
+                    activeDotIndex === i ? 'w-8 bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.5)]' : 'w-2.5 bg-yellow-400/20 hover:bg-yellow-400/40'
+                  }`}
+                  aria-label={`Go to slide ${i + 1}`}
+                />
               ))}
             </div>
           </div>
@@ -994,6 +1128,39 @@ export default function App() {
                         scrolling="yes"
                       ></iframe>
                     </div>
+                  ) : parsed.type === 'tiktok' ? (
+                    parsed.embedUrl ? (
+                      <div className="w-full h-full flex items-center justify-center bg-black py-4">
+                        <iframe
+                          src={parsed.embedUrl}
+                          title={selectedMedia.title}
+                          className="w-full h-full max-w-[380px] border-0 rounded-2xl shadow-xl"
+                          allowFullScreen
+                        ></iframe>
+                      </div>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-950 p-6 text-center">
+                        <div className="max-w-md bg-zinc-900 border border-zinc-800 p-8 rounded-3xl shadow-2xl">
+                          <div className="w-20 h-20 bg-gradient-to-tr from-[#00f2fe] via-black to-[#fe0979] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                            <svg className="w-10 h-10 fill-white" viewBox="0 0 24 24">
+                              <path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.89-.6-4.09-1.5-.7-.52-1.28-1.19-1.74-1.95-.01 2.25-.01 4.51-.01 6.77-.04 2.1-.51 4.25-1.68 6.03-1.61 2.49-4.59 3.99-7.58 3.66-3.41-.37-6.27-3.08-6.72-6.51-.55-4.14 2.12-8.19 6.21-8.91.82-.14 1.67-.16 2.5-.04V7.54c-1.13-.19-2.33-.03-3.39.46-1.97.91-3.3 2.99-3.26 5.17-.02 2.3 1.48 4.45 3.65 5.2 2.17.75 4.73.08 6.16-1.71 1.01-1.26 1.41-2.92 1.34-4.52V.02h.16z"/>
+                            </svg>
+                          </div>
+                          <h3 className="text-white text-xl font-extrabold mb-3">{selectedMedia.title || 'Video TikTok'}</h3>
+                          <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
+                            Video TikTok ini menggunakan tautan pendek ponsel. Silakan klik tombol di bawah untuk melihat dan memutar video langsung secara utuh di aplikasi TikTok.
+                          </p>
+                          <a
+                            href={parsed.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 bg-[#fe0979] hover:bg-[#ff1e87] text-white font-extrabold px-6 py-3 rounded-full transition-all hover:scale-105 active:scale-95 shadow-lg shadow-pink-500/20"
+                          >
+                            Tonton di TikTok ↗
+                          </a>
+                        </div>
+                      </div>
+                    )
                   ) : parsed.type === 'video' ? (
                     <video
                       src={parsed.url}
