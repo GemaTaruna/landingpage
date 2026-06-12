@@ -10,10 +10,62 @@ import {
   Database,
   Terminal,
   Check,
-  AlertCircle
+  AlertCircle,
+  Instagram,
+  Youtube
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured, SUPABASE_SQL_SETUP } from '../lib/supabase';
 import { useSupabaseCollection } from '../hooks/useSupabaseData';
+
+const getYoutubeId = (url: string): string | null => {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
+
+const parseMediaUrl = (url: string): any => {
+  if (!url) return { type: 'image', url: '', thumbnail: '' };
+  
+  const trimmed = String(url).trim();
+  const ytId = getYoutubeId(trimmed);
+  if (ytId) {
+    return {
+      type: 'youtube',
+      url: trimmed,
+      thumbnail: `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`,
+      embedUrl: `https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0`
+    };
+  }
+
+  if (trimmed.includes('instagram.com/')) {
+    const baseUrl = trimmed.split('?')[0];
+    const cleanUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+    return {
+      type: 'instagram',
+      url: trimmed,
+      thumbnail: '',
+      embedUrl: `${cleanUrl}embed/captioned/`
+    };
+  }
+
+  if (
+    trimmed.match(/\.(mp4|webm|ogg|mov|m4v)(?:\?|$)/i) || 
+    (trimmed.includes('/storage/v1/object/public/') && (trimmed.toLowerCase().includes('.mp4') || trimmed.toLowerCase().includes('.mov') || trimmed.toLowerCase().includes('.webm')))
+  ) {
+    return {
+      type: 'video',
+      url: trimmed,
+      thumbnail: trimmed,
+    };
+  }
+
+  return {
+    type: 'image',
+    url: trimmed,
+    thumbnail: trimmed
+  };
+};
 
 interface AdminPanelProps {
   onLogout: () => void;
@@ -527,23 +579,51 @@ export default function AdminPanel({ onLogout, userEmail }: AdminPanelProps) {
               </div>
             ))
           ) : (
-            galleryList.map((g: any) => (
-              <div key={g.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 space-y-3 group hover:shadow-lg transition-all">
-                <div className="aspect-video relative rounded-xl overflow-hidden bg-gray-100">
-                  <img src={g.imageUrl || g.image_url} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
-                </div>
-                <div className="flex justify-between items-start gap-2">
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-blue-950 truncate">{g.title || 'Momen Gema Taruna'}</h4>
-                    <p className="text-xs text-gray-500">{g.isLarge || g.is_large ? 'Ukuran Besar (Wide)' : 'Ukuran Standar'}</p>
+            galleryList.map((g: any) => {
+              const parsed = parseMediaUrl(g.imageUrl || g.image_url);
+              return (
+                <div key={g.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-200.5 space-y-3 group hover:shadow-lg transition-all flex flex-col justify-between">
+                  <div>
+                    <div className="aspect-video relative rounded-xl overflow-hidden bg-gray-100 mb-3 border">
+                      {parsed.type === 'instagram' ? (
+                        <div className="w-full h-full bg-gradient-to-tr from-purple-600 via-pink-600 to-yellow-500 flex flex-col items-center justify-center p-4">
+                          <Instagram size={32} className="text-white drop-shadow-md mb-1 animate-pulse" />
+                          <span className="text-white font-extrabold text-[10px] tracking-wider uppercase text-center bg-black/20 px-2 py-1 rounded-md">Instagram Link</span>
+                        </div>
+                      ) : parsed.type === 'youtube' ? (
+                        <div className="w-full h-full relative">
+                          <img src={parsed.thumbnail} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+                          <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                            <div className="bg-red-600 rounded-lg px-2 py-1 flex items-center justify-center text-white text-[10px] font-bold shadow-md">
+                              <Youtube size={12} className="fill-current mr-1 text-white inline shrink-0" /> YouTube
+                            </div>
+                          </div>
+                        </div>
+                      ) : parsed.type === 'video' ? (
+                        <div className="w-full h-full relative bg-black flex items-center justify-center">
+                          <video src={parsed.url} className="w-full h-full object-cover opacity-85" muted playsInline />
+                          <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                            <span className="bg-yellow-500 text-blue-950 font-bold px-2 py-1 rounded text-[10px] uppercase">Video File</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <img src={parsed.url} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+                      )}
+                    </div>
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-extrabold text-blue-950 truncate text-sm">{g.title || 'Momen Gema Taruna'}</h4>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase">{g.isLarge || g.is_large ? 'Ukuran Besar (Wide)' : 'Ukuran Standar'}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex gap-1">
-                    <button onClick={() => { setForm(g); setIsAdding(true); }} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit2 size={16}/></button>
-                    <button onClick={() => handleDelete(g.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16}/></button>
+                  <div className="flex gap-2 pt-2 border-t border-gray-100 justify-end">
+                    <button onClick={() => { setForm(g); setIsAdding(true); }} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1 text-xs font-bold"><Edit2 size={14}/> Edit</button>
+                    <button onClick={() => handleDelete(g.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1 text-xs font-bold"><Trash2 size={14}/> Hapus</button>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
