@@ -132,9 +132,22 @@ const getYoutubeId = (url: string): string | null => {
 
 const getTikTokId = (url: string): string | null => {
   if (!url) return null;
-  const regExp = /\/video\/(\d+)/;
-  const match = url.match(regExp);
-  return match ? match[1] : null;
+  
+  // Standard format: https://www.tiktok.com/@username/video/123456789
+  const stdRegExp = /\/video\/(\d+)/;
+  const match = url.match(stdRegExp);
+  if (match) return match[1];
+  
+  // Embed format direct
+  const embedRegExp = /\/embed\/v2\/(\d+)/;
+  const embedMatch = url.match(embedRegExp);
+  if (embedMatch) return embedMatch[1];
+
+  const embedRegExp2 = /\/embed\/(\d+)/;
+  const embedMatch2 = url.match(embedRegExp2);
+  if (embedMatch2) return embedMatch2[1];
+
+  return null;
 };
 
 const parseMediaUrl = (url: string): any => {
@@ -158,7 +171,8 @@ const parseMediaUrl = (url: string): any => {
       type: 'instagram',
       url: trimmed,
       thumbnail: '',
-      embedUrl: `${cleanUrl}embed/captioned/`
+      // simple /embed/ URL without /embed/captioned/ for cleaner aesthetic and space optimization
+      embedUrl: `${cleanUrl}embed/`
     };
   }
 
@@ -1091,24 +1105,30 @@ export default function App() {
         <AnimatePresence>
           {selectedMedia && (() => {
             const parsed = parseMediaUrl(selectedMedia.imageUrl || selectedMedia.image_url);
+            const isVertical = parsed.type === 'instagram' || parsed.type === 'tiktok';
             return (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 transition-all"
+                className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xs transition-all"
               >
                 <button 
                   onClick={() => setSelectedMedia(null)}
-                  className="absolute top-6 right-6 text-white hover:text-yellow-400 transition-colors z-[110]"
+                  className="absolute top-4 right-4 md:top-6 md:right-6 text-white hover:text-yellow-400 transition-colors z-[110] bg-black/50 hover:bg-black/80 md:bg-transparent p-2.5 rounded-full"
+                  aria-label="Close modal"
                 >
-                  <X size={40} />
+                  <X size={28} className="md:w-10 md:h-10" />
                 </button>
                 <motion.div
                   initial={{ scale: 0.9, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0.9, opacity: 0 }}
-                  className="relative max-w-5xl w-full aspect-video rounded-2xl overflow-hidden shadow-2xl bg-black"
+                  className={
+                    isVertical 
+                      ? "relative w-full max-w-[90vw] md:max-w-[420px] h-[75vh] md:h-[80vh] max-h-[720px] rounded-3xl overflow-hidden shadow-2xl bg-black border border-white/10 flex flex-col justify-between"
+                      : "relative max-w-5xl w-full aspect-video rounded-3xl overflow-hidden shadow-2xl bg-black border border-white/10"
+                  }
                 >
                   {parsed.type === 'youtube' ? (
                     <iframe
@@ -1119,44 +1139,44 @@ export default function App() {
                       allowFullScreen
                     ></iframe>
                   ) : parsed.type === 'instagram' ? (
-                    <div className="w-full h-full flex items-center justify-center bg-black py-4">
+                    <div className="w-full h-full flex items-center justify-center bg-black py-2">
                       <iframe
                         src={parsed.embedUrl}
                         title={selectedMedia.title}
-                        className="w-full h-full max-w-[380px] border-0"
+                        className="w-full h-full border-0 rounded-2xl"
                         allowTransparency
                         scrolling="yes"
                       ></iframe>
                     </div>
                   ) : parsed.type === 'tiktok' ? (
                     parsed.embedUrl ? (
-                      <div className="w-full h-full flex items-center justify-center bg-black py-4">
+                      <div className="w-full h-full flex items-center justify-center bg-black py-2">
                         <iframe
                           src={parsed.embedUrl}
                           title={selectedMedia.title}
-                          className="w-full h-full max-w-[380px] border-0 rounded-2xl shadow-xl"
+                          className="w-full h-full border-0 rounded-2xl shadow-xl"
                           allowFullScreen
                         ></iframe>
                       </div>
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-950 p-6 text-center">
-                        <div className="max-w-md bg-zinc-900 border border-zinc-800 p-8 rounded-3xl shadow-2xl">
-                          <div className="w-20 h-20 bg-gradient-to-tr from-[#00f2fe] via-black to-[#fe0979] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                            <svg className="w-10 h-10 fill-white" viewBox="0 0 24 24">
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-950 p-4 text-center">
+                        <div className="w-full max-w-xs bg-zinc-900 border border-zinc-800 p-6 md:p-8 rounded-3xl shadow-2xl mx-auto">
+                          <div className="w-16 h-16 bg-gradient-to-tr from-[#00f2fe] via-black to-[#fe0979] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg animate-pulse">
+                            <svg className="w-8 h-8 fill-white" viewBox="0 0 24 24">
                               <path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.89-.6-4.09-1.5-.7-.52-1.28-1.19-1.74-1.95-.01 2.25-.01 4.51-.01 6.77-.04 2.1-.51 4.25-1.68 6.03-1.61 2.49-4.59 3.99-7.58 3.66-3.41-.37-6.27-3.08-6.72-6.51-.55-4.14 2.12-8.19 6.21-8.91.82-.14 1.67-.16 2.5-.04V7.54c-1.13-.19-2.33-.03-3.39.46-1.97.91-3.3 2.99-3.26 5.17-.02 2.3 1.48 4.45 3.65 5.2 2.17.75 4.73.08 6.16-1.71 1.01-1.26 1.41-2.92 1.34-4.52V.02h.16z"/>
                             </svg>
                           </div>
-                          <h3 className="text-white text-xl font-extrabold mb-3">{selectedMedia.title || 'Video TikTok'}</h3>
-                          <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
-                            Video TikTok ini menggunakan tautan pendek ponsel. Silakan klik tombol di bawah untuk melihat dan memutar video langsung secara utuh di aplikasi TikTok.
+                          <h3 className="text-white text-base md:text-lg font-black mb-2">{selectedMedia.title || 'Video TikTok'}</h3>
+                          <p className="text-zinc-400 text-xs mb-5 leading-normal">
+                            Tautan ini menggunakan format pendek ponsel (shortlink). Silakan klik untuk membuka & memutar secara utuh di aplikasi TikTok.
                           </p>
                           <a
                             href={parsed.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 bg-[#fe0979] hover:bg-[#ff1e87] text-white font-extrabold px-6 py-3 rounded-full transition-all hover:scale-105 active:scale-95 shadow-lg shadow-pink-500/20"
+                            className="inline-flex items-center gap-2 bg-[#fe0979] hover:bg-[#ff1e87] text-white text-xs font-black px-6 py-2.5 rounded-full transition-all hover:scale-105 active:scale-95 shadow-lg shadow-pink-500/30"
                           >
-                            Tonton di TikTok ↗
+                            Buka di TikTok ↗
                           </a>
                         </div>
                       </div>
@@ -1177,8 +1197,8 @@ export default function App() {
                       referrerPolicy="no-referrer"
                     />
                   )}
-                  <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
-                    <h3 className="text-white text-2xl font-bold">{selectedMedia.title}</h3>
+                  <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-black/90 via-black/45 to-transparent pointer-events-none z-10">
+                    <h3 className="text-white text-sm md:text-lg font-black tracking-medium truncate">{selectedMedia.title}</h3>
                   </div>
                 </motion.div>
               </motion.div>
