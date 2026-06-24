@@ -12,6 +12,6 @@ jobs:
     steps:
       - name: Ping Supabase Database
         run: |
-          curl -X GET 'https://ecruhkvtequrxdrpjzrj.supabase.co/rest/v1/gallery?select=*&limit=1' \
+          curl -f -X GET 'https://ecruhkvtequrxdrpjzrj.supabase.co/rest/v1/personnel?select=*&limit=1' \
           -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
           -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
