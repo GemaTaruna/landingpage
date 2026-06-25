@@ -19,7 +19,8 @@ import {
   AlertCircle,
   Loader2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  User
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import React, { useState, useEffect } from 'react';
@@ -121,6 +122,68 @@ const getCleanAngkatanName = (val: string): string => {
     return str;
   }
   return `Angkatan ${str}`;
+};
+
+interface ProfileAvatarProps {
+  src?: string;
+  alt: string;
+  className?: string;
+  name?: string;
+}
+
+const ProfileAvatar: React.FC<ProfileAvatarProps> = ({ src, alt, className = "", name = "" }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    if (!src) {
+      setHasError(true);
+    } else {
+      setHasError(false);
+      setIsLoaded(false);
+    }
+  }, [src]);
+
+  const getInitials = (n: string) => {
+    if (!n) return 'GT';
+    const parts = n.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return parts[0].substring(0, 2).toUpperCase();
+  };
+
+  return (
+    <div className={`relative overflow-hidden bg-slate-100 flex items-center justify-center ${className}`}>
+      {/* Loading Skeleton Pulse */}
+      {!isLoaded && !hasError && (
+        <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-full"></div>
+      )}
+
+      {/* Actual Image */}
+      {src && !hasError && (
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          onLoad={() => setIsLoaded(true)}
+          onError={() => setHasError(true)}
+          className={`w-full h-full object-cover transition-opacity duration-500 rounded-full ${
+            isLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
+          referrerPolicy="no-referrer"
+        />
+      )}
+
+      {/* Fallback Initials / Icon */}
+      {hasError && (
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-blue-950 to-zinc-900 flex flex-col items-center justify-center text-white select-none rounded-full">
+          <span className="text-sm font-black tracking-wider text-yellow-400">{getInitials(name)}</span>
+          <User size={12} className="text-white/40 mt-0.5" />
+        </div>
+      )}
+    </div>
+  );
 };
 
 const getYoutubeId = (url: string): string | null => {
@@ -269,7 +332,7 @@ const faqData = [
   },
   {
     question: "Berapa lama durasi penampilan?",
-    answer: "Durasi penampilan bervariasi tergantung paket yang dipilih. Paket Parade sekitar 30-45 menit (rute jalan), sedangkan Display/Konser Lapangan 15-20 menit dengan formasi lengkap yang intens."
+    answer: "Durasi penampilan (Display) sekitar 20-30 menit dengan formasi lengkap yang intens."
   },
   {
     question: "Bagaimana dengan transportasi dan akomodasi?",
@@ -301,6 +364,123 @@ const faqData = [
   }
 ];
 
+const getInitialSettings = () => {
+  const local = localStorage.getItem('gemataruna_settings');
+  const defaults = {
+    hero: {
+      title: "Satu Tekad, Satu Semangat,",
+      accent: "Marching Hebat!",
+      subtitle: "Mengukir kebanggaan melalui harmoni nada, visual memukau, dan dedikasi tanpa batas untuk mengharumkan nama sekolah.",
+      image: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&q=80&w=2000"
+    },
+    services: [
+      {
+        title: "Parade / Kirab",
+        description: "Formasi dinamis untuk pawai kemerdekaan, kirab budaya, dan acara kenegaraan dengan musik patriotik yang memukau.",
+        image: "https://images.unsplash.com/photo-1559827260-dc66d52bef19?auto=format&fit=crop&q=80&w=800"
+      },
+      {
+        title: "Display / Konser Lapangan",
+        description: "Pertunjukan spektakuler dengan koreografi kompleks, drill formasi artistik, dan visual performance yang menawan di lapangan terbuka.",
+        image: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?auto=format&fit=crop&q=80&w=800"
+      },
+      {
+        title: "Korsik / Upacara Formal",
+        description: "Layanan korps musik untuk upacara resmi, pelantikan, dan acara kedinasan. Membawakan lagu kebangsaan dan mars dengan standar protokol tinggi yang khidmat.",
+        image: "https://images.unsplash.com/photo-1544427920-c49ccfb85579?auto=format&fit=crop&q=80&w=800"
+      },
+      {
+        title: "Penyambutan Tamu",
+        description: "Upacara penyambutan eksklusif dengan formasi guard of honor dan alunan musik seremonial yang megah dan penuh kehormatan.",
+        image: "https://images.unsplash.com/photo-1511735111819-9a3f7709049c?auto=format&fit=crop&q=80&w=800"
+      }
+    ],
+    testimonials: [
+      {
+        name: "Bapak Suryanto",
+        position: "Kepala Dinas Kebudayaan Sragen",
+        text: "Penampilan Gema Taruna selalu memukau dan profesional. Formasi yang rapi dan musik yang membanggakan.",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Andi"
+      },
+      {
+        name: "Ibu Dr. Retno Wulandari",
+        position: "Ketua Panitia Kirab Budaya 2024",
+        text: "Kerjasama yang sangat baik, tepat waktu, dan hasilnya luar biasa. Sangat merekomendasikan untuk acara formal maupun seremonial.",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Retno"
+      },
+      {
+        name: "Bapak Wahyu Utomo, S.Pd.",
+        position: "Wakil Kepala Sekolah Bidang Kesiswaan",
+        text: "Sangat bangga dengan kedisiplinan dan dedikasi taruna-taruni Gema Taruna. Setiap performa memancarkan karakter tangguh dan kerja tim yang luar biasa.",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Wahyu"
+      },
+      {
+        name: "Kak Seto Pamungkas",
+        position: "Penyelenggara Event Organizer Solo Raya",
+        text: "Suatu kehormatan mengundang Gema Taruna. Koordinasi lapangan sangat mudah, atraksi Color Guard sangat megah, dan audio brass-nya benar-benar menghidupkan seluruh area acara.",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Seto"
+      }
+    ],
+    faqs: [
+      {
+        question: "Apakah bisa request lagu tertentu?",
+        answer: "Tentu saja! Kami sangat terbuka untuk permintaan lagu khusus agar sesuai dengan tema acara Anda. Kami menyarankan untuk memberitahukan lagu pilihan Anda minimal 3-4 minggu sebelum acara berlangsung agar tim aransemen musik dan seluruh personel kami dapat berlatih dengan maksimal."
+      },
+      {
+        question: "Berapa lama durasi penampilan?",
+        answer: "Durasi penampilan (Display) sekitar 20-30 menit dengan formasi lengkap yang intens."
+      },
+      {
+        question: "Bagaimana dengan transportasi dan akomodasi?",
+        answer: "Akomodasi, konsumsi, dan transportasi seluruh personel Gema Taruna serta instrumen musiknya dari kampus SMKN 2 Sragen menuju lokasi acara dan kembali disediakan oleh pihak pengundang (klien)."
+      },
+      {
+        question: "Berapa minimal waktu pemesanan?",
+        answer: "Kami menyarankan pemesanan dilakukan minimal 1 bulan sebelum acara (terutama pada musim padat event seperti Agustus-Oktober) untuk memastikan ketersediaan jadwal serta persiapan formasi dan perizinan sekolah berjalan lancar."
+      },
+      {
+        question: "Berapa jumlah personel yang tampil?",
+        answer: "Jumlah personel bervariasi antara 40 hingga 80 orang. Formasi lengkap (Big Band) melibatkan seluruh instrumen brass, perkusi, pit instrument, dan color guard untuk hasil maksimal."
+      },
+      {
+        question: "Apakah melayani acara di luar hari sekolah?",
+        answer: "Ya, kami melayani penampilan di hari libur, akhir pekan, maupun hari kerja. Untuk hari kerja, kami akan mengoordinasikan perizinan sekolah bagi para personel taruna/taruni."
+      },
+      {
+        question: "Berapa lama waktu persiapan sebelum tampil?",
+        answer: "Kami membutuhkan waktu sekitar 30-60 menit untuk persiapan alat (unloading), pemanasan, dan tuning instrumen di lokasi acara sebelum waktu penampilan dimulai."
+      },
+      {
+        question: "Apakah melayani acara di luar Kabupaten Sragen?",
+        answer: "Ya, Gema Taruna melayani undangan di seluruh wilayah Solo Raya dan sekitarnya (Karesidenan Surakarta). Untuk luar daerah tersebut, silahkan konsultasikan lebih lanjut dengan admin."
+      },
+      {
+        question: "Apa saja fasilitas yang dibutuhkan tim di lokasi?",
+        answer: "Kami membutuhkan area transit/ruang tunggu untuk personel, air minum yang cukup, dan area parkir yang memadai untuk armada angkut alat."
+      },
+      {
+        question: "Bagaimana prosedur pemesanannya?",
+        answer: "Silahkan hubungi kami melalui WhatsApp, tentukan tanggal dan lokasi, diskusikan kebutuhan paket, dan lakukan konfirmasi (DP) untuk mengunci jadwal penampilan kami."
+      }
+    ]
+  };
+
+  if (local) {
+    try {
+      const parsed = JSON.parse(local);
+      return {
+        hero: parsed.hero || defaults.hero,
+        services: parsed.services || defaults.services,
+        testimonials: parsed.testimonials || defaults.testimonials,
+        faqs: parsed.faqs || defaults.faqs
+      };
+    } catch (e) {
+      return defaults;
+    }
+  }
+  return defaults;
+};
+
 export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
@@ -312,6 +492,43 @@ export default function App() {
   const [hasSetDefaultAngkatan, setHasSetDefaultAngkatan] = useState(false);
   const [activeDotIndex, setActiveDotIndex] = useState(0);
   
+  // Dynamic Web Settings State
+  const [webSettings, setWebSettings] = useState<any>(() => getInitialSettings());
+
+  // Load web settings from Supabase table "settings"
+  useEffect(() => {
+    const fetchSupabaseSettings = async () => {
+      if (!isSupabaseConfigured) return;
+      try {
+        const { data, error } = await supabase.from('settings').select('*');
+        if (error) {
+          console.warn("Could not load settings from Supabase (maybe table does not exist):", error.message);
+          return;
+        }
+        if (data && data.length > 0) {
+          const loaded: any = {};
+          data.forEach((row: any) => {
+            loaded[row.key] = row.value;
+          });
+          
+          setWebSettings((prev: any) => {
+            const merged = {
+              hero: loaded.hero || prev.hero,
+              services: loaded.services || prev.services,
+              testimonials: loaded.testimonials || prev.testimonials,
+              faqs: loaded.faqs || prev.faqs
+            };
+            localStorage.setItem('gemataruna_settings', JSON.stringify(merged));
+            return merged;
+          });
+        }
+      } catch (e) {
+        console.error("Error loading web settings:", e);
+      }
+    };
+    fetchSupabaseSettings();
+  }, []);
+
   // Auth & Admin State
   const [user, setUser] = useState<any>(null);
   const [isAdminMode, setIsAdminMode] = useState(false);
@@ -476,6 +693,27 @@ export default function App() {
     const matchAngkatan = filterAngkatan === 'Semua Angkatan' || cleanP === filterAngkatan;
     const matchSection = filterSection === 'Semua Section' || p.section === filterSection;
     return matchAngkatan && matchSection;
+  }).sort((a: any, b: any) => {
+    const sectionOrderMap: { [key: string]: number } = {
+      'Leadership': 1,
+      'Brass': 2,
+      'Percussion': 3,
+      'Pit Instrument': 4,
+      'Color Guard': 5
+    };
+    const orderA = sectionOrderMap[a.section] || 99;
+    const orderB = sectionOrderMap[b.section] || 99;
+    if (orderA !== orderB) {
+      return orderA - orderB;
+    }
+    const instA = (a.instrument || '').toLowerCase();
+    const instB = (b.instrument || '').toLowerCase();
+    if (instA !== instB) {
+      return instA.localeCompare(instB);
+    }
+    const nameA = (a.name || '').toLowerCase();
+    const nameB = (b.name || '').toLowerCase();
+    return nameA.localeCompare(nameB);
   });
 
   const ITEMS_PER_PAGE = 12;
@@ -484,7 +722,16 @@ export default function App() {
   const paginatedPersonnel = filteredPersonnel.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   if (isAdminMode && user?.email && isEmailAdmin(user.email)) {
-    return <AdminPanel onLogout={handleLogout} userEmail={user?.email} />;
+    return (
+      <AdminPanel 
+        onLogout={handleLogout} 
+        userEmail={user?.email} 
+        initialSettings={webSettings}
+        onSettingsSaved={(newSettings: any) => {
+          setWebSettings(newSettings);
+        }}
+      />
+    );
   }
 
   return (
@@ -585,7 +832,7 @@ export default function App() {
           <img
             alt="Marching Band"
             className="w-full h-full object-cover"
-            src="https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&q=80&w=2000"
+            src={webSettings.hero.image}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-blue-950/90 via-blue-950/75 to-blue-950/90"></div>
         </div>
@@ -597,13 +844,15 @@ export default function App() {
             transition={{ duration: 0.8 }}
           >
             <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold text-white mb-6 leading-tight tracking-tight">
-              Satu Tekad, Satu Semangat,
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-500 mt-2">
-                Marching Hebat!
-              </span>
+              {webSettings.hero.title}
+              {webSettings.hero.accent && (
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-500 mt-2">
+                  {webSettings.hero.accent}
+                </span>
+              )}
             </h1>
             <p className="text-lg sm:text-xl md:text-2xl text-gray-200 mb-10 max-w-3xl mx-auto leading-relaxed opacity-90">
-              Mengukir kebanggaan melalui harmoni nada, visual memukau, dan dedikasi tanpa batas untuk mengharumkan nama sekolah.
+              {webSettings.hero.subtitle}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <a
@@ -665,7 +914,7 @@ export default function App() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-            {services.map((service, index) => (
+            {webSettings.services.map((service: any, index: number) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -675,7 +924,7 @@ export default function App() {
                 className="group relative overflow-hidden rounded-3xl shadow-2xl h-[500px]"
               >
                 <img
-                  src={service.image}
+                  src={service.image || service.imageUrl}
                   alt={service.title}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
@@ -788,14 +1037,14 @@ export default function App() {
                   onClick={() => setSelectedPerson(person)}
                   className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 text-center hover:shadow-xl transition-all duration-500 hover:-translate-y-1 cursor-pointer group"
                 >
-                  <div className="relative mb-4">
-                    <img
-                      src={person.avatarUrl}
+                  <div className="relative mb-4 flex justify-center">
+                    <ProfileAvatar
+                      src={person.avatarUrl || person.avatar_url}
                       alt={person.name}
-                      className="w-24 h-24 rounded-full mx-auto border-4 border-yellow-400/30 p-1 object-cover transition-transform duration-500 group-hover:scale-105"
-                      referrerPolicy="no-referrer"
+                      name={person.name}
+                      className="w-24 h-24 rounded-full border-4 border-yellow-400/30 p-1 transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-blue-950/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div className="absolute inset-0 bg-blue-950/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
                       <Star className="text-white fill-yellow-400" size={24} />
                     </div>
                   </div>
@@ -1232,11 +1481,11 @@ export default function App() {
                 <div className="h-32 bg-gradient-to-r from-blue-950 to-blue-900 relative">
                   <div className="absolute -bottom-16 left-1/2 -translate-x-1/2">
                     <div className="relative">
-                      <img 
-                        src={selectedPerson.avatarUrl} 
+                      <ProfileAvatar 
+                        src={selectedPerson.avatarUrl || selectedPerson.avatar_url} 
                         alt={selectedPerson.name} 
-                        className="w-32 h-32 rounded-3xl border-4 border-white shadow-xl object-cover bg-white"
-                        referrerPolicy="no-referrer"
+                        name={selectedPerson.name}
+                        className="w-32 h-32 rounded-3xl border-4 border-white shadow-xl bg-white"
                       />
                       <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-yellow-400 rounded-2xl flex items-center justify-center shadow-lg border-4 border-white">
                         <Award size={20} className="text-blue-950" />
@@ -1374,7 +1623,7 @@ export default function App() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {testimonials.map((testi, i) => (
+            {webSettings.testimonials.map((testi: any, i: number) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
@@ -1391,7 +1640,7 @@ export default function App() {
                 </div>
                 <div className="flex items-center gap-4 pt-4 border-t border-gray-100 mt-auto">
                   <img
-                    src={testi.avatar}
+                    src={testi.avatar || testi.avatarUrl}
                     alt={testi.name}
                     className="w-14 h-14 rounded-full border-2 border-yellow-400 shrink-0 object-cover bg-gray-50"
                     referrerPolicy="no-referrer"
@@ -1424,7 +1673,7 @@ export default function App() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start mt-10">
             {/* Column 1 (Even Indexes) */}
             <div className="space-y-4">
-              {faqData.map((faq, i) => {
+              {webSettings.faqs.map((faq: any, i: number) => {
                 if (i % 2 !== 0) return null;
                 return (
                   <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-6 transition-all duration-300 hover:border-yellow-400/40">
@@ -1458,7 +1707,7 @@ export default function App() {
 
             {/* Column 2 (Odd Indexes) */}
             <div className="space-y-4">
-              {faqData.map((faq, i) => {
+              {webSettings.faqs.map((faq: any, i: number) => {
                 if (i % 2 === 0) return null;
                 return (
                   <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-6 transition-all duration-300 hover:border-yellow-400/40">
