@@ -199,7 +199,10 @@ export default function AdminPanel({ onLogout, userEmail, initialSettings, onSet
   const [copiedSql, setCopiedSql] = useState(false);
 
   // Dynamic Web Content Settings State
-  const [settings, setSettings] = useState<any>(initialSettings);
+  const [settings, setSettings] = useState<any>(() => ({
+    ...initialSettings,
+    packages: initialSettings.packages || []
+  }));
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [uploadingTarget, setUploadingTarget] = useState<string | null>(null);
 
@@ -353,7 +356,7 @@ export default function AdminPanel({ onLogout, userEmail, initialSettings, onSet
     setIsSavingSettings(true);
     try {
       if (isSupabaseConfigured) {
-        const keys = ['hero', 'services', 'testimonials', 'faqs'];
+        const keys = ['hero', 'services', 'testimonials', 'faqs', 'packages'];
         for (const key of keys) {
           const { error } = await supabase
             .from('settings')
@@ -616,7 +619,7 @@ export default function AdminPanel({ onLogout, userEmail, initialSettings, onSet
             </div>
             
             <p className="text-sm text-slate-300 mb-6 leading-relaxed">
-              Buka dashboard projek Supabase Anda, masuk ke menu <strong>SQL Editor</strong>, klik <strong>New Query</strong>, tempelkan kode skrip di bawah ini, lalu jalankan (klik Run). Ini akan membuat tabel <code className="text-yellow-300 font-mono">personnel</code> dan <code className="text-yellow-300 font-mono">gallery</code> lengkap dengan izin akses RLS (Row Level Security).
+              Buka dashboard projek Supabase Anda, masuk ke menu <strong>SQL Editor</strong>, klik <strong>New Query</strong>, tempelkan kode skrip di bawah ini, lalu jalankan (klik Run). Ini akan membuat tabel <code className="text-yellow-300 font-mono">personnel</code>, <code className="text-yellow-300 font-mono">gallery</code>, dan <code className="text-yellow-300 font-mono">settings</code> lengkap dengan izin akses RLS (Row Level Security).
             </p>
 
             <pre className="bg-slate-900 border border-slate-800 p-4 rounded-xl text-xs font-mono text-emerald-400 overflow-x-auto max-h-72">
@@ -1492,6 +1495,168 @@ export default function AdminPanel({ onLogout, userEmail, initialSettings, onSet
                           setSettings({ ...settings, faqs: newFaqs });
                         }}
                       />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* SECTION 5: PAKET FEE PENAMPILAN */}
+            <div className="bg-white p-6 md:p-8 rounded-[2rem] border border-gray-200 shadow-sm space-y-6">
+              <div className="flex justify-between items-center border-b pb-3">
+                <h4 className="text-lg font-black text-blue-950 flex items-center gap-2">
+                  <span className="text-yellow-500 text-xl">5.</span> Paket Fee Penampilan
+                </h4>
+                <button
+                  onClick={() => {
+                    const newPkgs = [...(settings.packages || []), {
+                      name: "Paket Baru",
+                      description: "Deskripsi paket penampilan baru Anda.",
+                      price: "Rp 2.000.000",
+                      features: [
+                        "Kekuatan Tim: ± 50 Personel",
+                        "Formasi Komplit",
+                        "Konsumsi & Transportasi disediakan oleh panitia"
+                      ],
+                      popular: false
+                    }];
+                    setSettings({ ...settings, packages: newPkgs });
+                  }}
+                  className="bg-yellow-400 hover:bg-yellow-500 text-blue-950 font-bold text-xs px-3 py-2 rounded-xl flex items-center gap-1 active:scale-95 transition-all"
+                >
+                  <Plus size={14} /> Tambah Paket Baru
+                </button>
+              </div>
+
+              <div className="space-y-8">
+                {(settings.packages || []).map((pkg: any, index: number) => (
+                  <div key={index} className="bg-gray-50 p-6 rounded-2xl border border-gray-150 relative space-y-4 animate-in fade-in duration-200">
+                    <button
+                      onClick={() => {
+                        const newPkgs = [...settings.packages];
+                        newPkgs.splice(index, 1);
+                        setSettings({ ...settings, packages: newPkgs });
+                      }}
+                      className="absolute top-3 right-3 text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-all"
+                      title="Hapus Paket"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-1">Nama Paket</label>
+                        <input
+                          required
+                          type="text"
+                          className="w-full p-2.5 rounded-lg border border-gray-200 bg-white outline-none focus:border-yellow-400 text-xs font-bold text-blue-950"
+                          value={pkg.name}
+                          onChange={e => {
+                            const newPkgs = [...settings.packages];
+                            newPkgs[index] = { ...newPkgs[index], name: e.target.value };
+                            setSettings({ ...settings, packages: newPkgs });
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-1">Harga (Teks)</label>
+                        <input
+                          required
+                          type="text"
+                          className="w-full p-2.5 rounded-lg border border-gray-200 bg-white outline-none focus:border-yellow-400 text-xs font-bold text-emerald-600"
+                          value={pkg.price}
+                          onChange={e => {
+                            const newPkgs = [...settings.packages];
+                            newPkgs[index] = { ...newPkgs[index], price: e.target.value };
+                            setSettings({ ...settings, packages: newPkgs });
+                          }}
+                        />
+                      </div>
+                      <div className="flex items-center pt-5">
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 text-yellow-500 rounded focus:ring-yellow-400 border-gray-300"
+                            checked={pkg.popular || false}
+                            onChange={e => {
+                              const newPkgs = [...settings.packages];
+                              newPkgs[index] = { ...newPkgs[index], popular: e.target.checked };
+                              setSettings({ ...settings, packages: newPkgs });
+                            }}
+                          />
+                          <span className="text-xs font-bold text-blue-950">Tandai sebagai Paket Terpopuler</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-1">Deskripsi Ringkas Paket</label>
+                      <textarea
+                        required
+                        rows={2}
+                        className="w-full p-2.5 rounded-lg border border-gray-200 bg-white outline-none focus:border-yellow-400 text-xs font-medium text-gray-700 leading-relaxed"
+                        value={pkg.description}
+                        onChange={e => {
+                          const newPkgs = [...settings.packages];
+                          newPkgs[index] = { ...newPkgs[index], description: e.target.value };
+                          setSettings({ ...settings, packages: newPkgs });
+                        }}
+                      />
+                    </div>
+
+                    {/* Features / Benefits Array */}
+                    <div className="space-y-2 border-t pt-3">
+                      <div className="flex justify-between items-center">
+                        <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Fasilitas / Keunggulan Paket ({pkg.features?.length || 0})</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newPkgs = [...settings.packages];
+                            const features = [...(newPkgs[index].features || [])];
+                            features.push("Fasilitas baru...");
+                            newPkgs[index] = { ...newPkgs[index], features };
+                            setSettings({ ...settings, packages: newPkgs });
+                          }}
+                          className="text-yellow-600 hover:text-yellow-700 font-bold text-[10px] flex items-center gap-0.5"
+                        >
+                          <Plus size={12} /> Tambah Fasilitas
+                        </button>
+                      </div>
+
+                      <div className="space-y-2">
+                        {(pkg.features || []).map((feature: string, fIdx: number) => (
+                          <div key={fIdx} className="flex gap-2 items-center">
+                            <span className="text-gray-400 font-bold text-xs select-none">✓</span>
+                            <input
+                              required
+                              type="text"
+                              className="flex-1 p-2 rounded-lg border border-gray-200 bg-white outline-none focus:border-yellow-400 text-xs font-medium text-gray-700"
+                              value={feature}
+                              onChange={e => {
+                                const newPkgs = [...settings.packages];
+                                const features = [...newPkgs[index].features];
+                                features[fIdx] = e.target.value;
+                                newPkgs[index] = { ...newPkgs[index], features };
+                                setSettings({ ...settings, packages: newPkgs });
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newPkgs = [...settings.packages];
+                                const features = [...newPkgs[index].features];
+                                features.splice(fIdx, 1);
+                                newPkgs[index] = { ...newPkgs[index], features };
+                                setSettings({ ...settings, packages: newPkgs });
+                              }}
+                              className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-all"
+                              title="Hapus fasilitas"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 ))}
