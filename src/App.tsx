@@ -20,7 +20,8 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
-  User
+  User,
+  ArrowUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import React, { useState, useEffect } from 'react';
@@ -462,7 +463,8 @@ const getInitialSettings = () => {
         question: "Bagaimana prosedur pemesanannya?",
         answer: "Silahkan hubungi kami melalui WhatsApp, tentukan tanggal dan lokasi, diskusikan kebutuhan paket, dan lakukan konfirmasi (DP) untuk mengunci jadwal penampilan kami."
       }
-    ]
+    ],
+    packages: pricingPackages
   };
 
   if (local) {
@@ -472,7 +474,8 @@ const getInitialSettings = () => {
         hero: parsed.hero || defaults.hero,
         services: parsed.services || defaults.services,
         testimonials: parsed.testimonials || defaults.testimonials,
-        faqs: parsed.faqs || defaults.faqs
+        faqs: parsed.faqs || defaults.faqs,
+        packages: parsed.packages || defaults.packages
       };
     } catch (e) {
       return defaults;
@@ -495,6 +498,28 @@ export default function App() {
   // Dynamic Web Settings State
   const [webSettings, setWebSettings] = useState<any>(() => getInitialSettings());
 
+  // Scroll to Top state and effect
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 400) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
+
   // Load web settings from Supabase table "settings"
   useEffect(() => {
     const fetchSupabaseSettings = async () => {
@@ -516,7 +541,8 @@ export default function App() {
               hero: loaded.hero || prev.hero,
               services: loaded.services || prev.services,
               testimonials: loaded.testimonials || prev.testimonials,
-              faqs: loaded.faqs || prev.faqs
+              faqs: loaded.faqs || prev.faqs,
+              packages: loaded.packages || prev.packages || pricingPackages
             };
             localStorage.setItem('gemataruna_settings', JSON.stringify(merged));
             return merged;
@@ -1530,7 +1556,7 @@ export default function App() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-5xl mx-auto">
-            {pricingPackages.map((pkg, index) => (
+            {(webSettings.packages || pricingPackages).map((pkg, index) => (
               <div
                 key={index}
                 className={`relative rounded-3xl shadow-2xl p-8 md:p-12 transition-all duration-500 hover:-translate-y-2 border-2 ${
@@ -1948,6 +1974,24 @@ export default function App() {
           )}
         </AnimatePresence>
       </footer>
+
+      {/* Floating Scroll to Top Button */}
+      <AnimatePresence>
+        {showScrollTop && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={scrollToTop}
+            className="fixed bottom-6 right-6 z-50 bg-yellow-400 hover:bg-yellow-500 text-blue-950 p-4 rounded-full shadow-2xl border-2 border-white flex items-center justify-center transition-all cursor-pointer"
+            title="Gulir ke atas"
+          >
+            <ArrowUp size={20} className="stroke-[3]" />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
