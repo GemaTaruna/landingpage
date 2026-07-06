@@ -31,8 +31,8 @@ export const supabase = createClient(
  * They can copy-paste this direct to Supabase -> SQL Editor.
  */
 export const SUPABASE_SQL_SETUP = `
--- 1. Create PERSONNEL table
-create table public.personnel (
+-- 1. Create PERSONNEL table if not exists
+create table if not exists public.personnel (
   id uuid default gen_random_uuid() primary key,
   name text not null,
   section text not null,
@@ -42,8 +42,8 @@ create table public.personnel (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 2. Create GALLERY table
-create table public.gallery (
+-- 2. Create GALLERY table if not exists
+create table if not exists public.gallery (
   id uuid default gen_random_uuid() primary key,
   title text default '',
   image_url text not null,
@@ -51,19 +51,37 @@ create table public.gallery (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- 3. Create SETTINGS table for Website Content Management if not exists
+create table if not exists public.settings (
+  key text primary key,
+  value jsonb not null
+);
+
 -- Enable RLS (Row Level Security) - Optional but recommended
 alter table public.personnel enable row level security;
 alter table public.gallery enable row level security;
+alter table public.settings enable row level security;
+
+-- Drop existing policies if any to prevent duplicate errors
+drop policy if exists "Allow public read access on personnel" on public.personnel;
+drop policy if exists "Allow public read access on gallery" on public.gallery;
+drop policy if exists "Allow public read access on settings" on public.settings;
+
+drop policy if exists "Allow full access for admin on personnel" on public.personnel;
+drop policy if exists "Allow full access for admin on gallery" on public.gallery;
+drop policy if exists "Allow full access for admin on settings" on public.settings;
 
 -- Public read access policies
 create policy "Allow public read access on personnel" on public.personnel for select using (true);
 create policy "Allow public read access on gallery" on public.gallery for select using (true);
+create policy "Allow public read access on settings" on public.settings for select using (true);
 
 -- Admin write access policies (replace with your admin email or keep open during setup)
 create policy "Allow full access for admin on personnel" on public.personnel for all using (true);
 create policy "Allow full access for admin on gallery" on public.gallery for all using (true);
+create policy "Allow full access for admin on settings" on public.settings for all using (true);
 
--- 3. Storage bucket setup
+-- 4. Storage bucket setup
 -- Go to Storage in Supabase:
 -- Create a public bucket called "gemataruna"
 -- Set Storage policies to:
