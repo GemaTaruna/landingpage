@@ -483,7 +483,9 @@ export default function AdminPanel({ onLogout, userEmail, initialSettings, onSet
           section: cleanedData.section,
           instrument: cleanedData.instrument,
           angkatan: cleanedData.angkatan.toString(),
-          avatar_url: cleanImageUrl(avatar)
+          avatar_url: cleanImageUrl(avatar),
+          instagram: cleanedData.instagram || null,
+          tiktok: cleanedData.tiktok || null
         };
       } else {
         const img = cleanedData.image_url || cleanedData.imageUrl || '';
@@ -890,6 +892,22 @@ export default function AdminPanel({ onLogout, userEmail, initialSettings, onSet
                       required placeholder="Angkatan (Contoh: 2024)" className="w-full p-3 rounded-xl border border-gray-200 outline-none focus:border-yellow-400" 
                       value={form.angkatan || ''} onChange={e => setForm({...form, angkatan: e.target.value})}
                     />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Instagram (Opsional)</label>
+                        <input 
+                          placeholder="Contoh: @username" className="w-full p-3 rounded-xl border border-gray-200 outline-none focus:border-yellow-400 text-xs font-semibold" 
+                          value={form.instagram || ''} onChange={e => setForm({...form, instagram: e.target.value})}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">TikTok (Opsional)</label>
+                        <input 
+                          placeholder="Contoh: @username" className="w-full p-3 rounded-xl border border-gray-200 outline-none focus:border-yellow-400 text-xs font-semibold" 
+                          value={form.tiktok || ''} onChange={e => setForm({...form, tiktok: e.target.value})}
+                        />
+                      </div>
+                    </div>
                     <div className="space-y-2">
                       <label className="block text-sm font-bold text-gray-700">Foto Profil</label>
                       <div className="flex gap-4 items-center">
@@ -1012,7 +1030,11 @@ export default function AdminPanel({ onLogout, userEmail, initialSettings, onSet
                   <div className="flex-1 min-w-0">
                     <h4 className="font-bold text-blue-950 truncate">{p.name}</h4>
                     <p className="text-xs text-gray-500">{p.section} - {p.instrument}</p>
-                    <p className="text-[10px] font-bold text-yellow-600">Angkatan {p.angkatan}</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="text-[10px] font-bold text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded">Angkatan {p.angkatan}</span>
+                      {p.instagram && <span className="text-[9px] bg-pink-50 text-pink-600 font-extrabold px-1 rounded" title={`Instagram: ${p.instagram}`}>IG</span>}
+                      {p.tiktok && <span className="text-[9px] bg-zinc-100 text-zinc-900 font-extrabold px-1 rounded" title={`TikTok: ${p.tiktok}`}>TT</span>}
+                    </div>
                   </div>
                   <div className="flex flex-col gap-2">
                     <button onClick={() => { setForm(p); setIsAdding(true); }} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit2 size={16}/></button>
