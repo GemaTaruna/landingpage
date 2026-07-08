@@ -39,8 +39,14 @@ create table if not exists public.personnel (
   instrument text not null,
   angkatan text not null,
   avatar_url text,
+  instagram text,
+  tiktok text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- JALANKAN INI JIKA TABEL SEBELUMNYA SUDAH ADA (MIGRASI):
+-- alter table public.personnel add column if not exists instagram text;
+-- alter table public.personnel add column if not exists tiktok text;
 
 -- 2. Create GALLERY table if not exists
 create table if not exists public.gallery (
