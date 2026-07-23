@@ -1614,24 +1614,17 @@ export default function App() {
                 </h3>
                 <p className={`mb-8 text-lg font-medium opacity-80 ${pkg.popular ? 'text-gray-200' : 'text-gray-600'}`}>{pkg.description}</p>
                 <div className="mb-10">
-                  <p className={`text-[10px] font-black uppercase tracking-widest ${pkg.popular ? 'text-yellow-400' : 'text-yellow-600'} mb-2.5`}>
-                    Tarif Operasional
+                  <p className={`text-[10px] font-black uppercase tracking-widest ${pkg.popular ? 'text-yellow-400' : 'text-yellow-600'} mb-1`}>
+                    Fee / Tarif Penampilan
                   </p>
-                  <a
-                    href={`${WA_LINK}?text=Halo, saya ingin berkonsultasi mengenai tarif operasional dan detail penampilan untuk ${encodeURIComponent(pkg.name)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl font-bold text-xs transition-all duration-300 shadow-md hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${
-                      pkg.popular
-                        ? 'bg-yellow-400 text-blue-950 hover:bg-yellow-300 shadow-yellow-400/15'
-                        : 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-500/10'
-                    }`}
-                  >
-                    <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24">
-                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.513 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.413 9.863-9.832.002-2.624-1.023-5.092-2.885-6.957C16.59 1.953 14.129.93 11.517.93c-5.44 0-9.866 4.415-9.869 9.836-.001 1.77.466 3.498 1.354 5.03l-.393 1.437 1.488-.39 1.46.863zm13.102-7.234c-.11-.18-.4-.29-.88-.53s-2.84-1.4-3.28-1.56c-.44-.16-.76-.24-.1.72.66.96.86 1.2 1.08 1.44.22.24.44.27-.04.51-.48.24-1.62.6-2.28.04-1.34-1.185-2.28-2.625-2.58-3.14-.3-.51-.03-.79.21-1.03.22-.22.48-.51.72-.77.16-.18.27-.33.38-.53.11-.21.06-.4-.03-.53-.08-.14-.76-1.84-1.04-2.52-.28-.68-.57-.59-.78-.59-.2-.01-.43-.01-.66-.01-.23 0-.61.09-.93.44-.32.35-1.22 1.19-1.22 2.91 0 1.72 1.25 3.39 1.43 3.63.18.24 2.47 3.77 5.98 5.29 2.99 1.3 3.6 1.04 4.88.92 1.28-.12 2.84-1.16 3.24-2.23.4-1.07.4-1.99.28-2.18z"/>
-                    </svg>
-                    <span>Hubungi WA (Nego / Tanya Tarif)</span>
-                  </a>
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <span className={`text-4xl md:text-5xl font-black ${pkg.popular ? 'text-white' : 'text-blue-950'}`}>
+                      {pkg.price || 'Hubungi Admin'}
+                    </span>
+                  </div>
+                  <p className={`text-xs font-medium ${pkg.popular ? 'text-gray-300' : 'text-gray-500'}`}>
+                    *Dapat disesuaikan dengan anggaran &amp; kebutuhan panitia
+                  </p>
                 </div>
                 <ul className="space-y-5 mb-12">
                   {pkg.features.map((feature, i) => (
